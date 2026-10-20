@@ -116,6 +116,7 @@ textarea,input.txt{width:100%;min-height:120px;border-radius:14px;border:2px sol
 input.txt{min-height:56px;padding:0 14px;border-radius:14px;border:2px solid var(--line);background:var(--surface);font-size:1rem}
 .help{font-size:.9rem;color:var(--muted)}
 .thanks-actions{display:flex;flex-direction:column;gap:12px}
+.desc{white-space:pre-line}
 </style>
 </head>
 <body>
@@ -141,7 +142,7 @@ const CONFIG = {
   letraProducto: "B",
   // Ingredientes o descripción REAL de la receta. Si queda vacío, la encuesta
   // muestra un aviso de "Descripción pendiente". No inventes ingredientes ni beneficios.
-  descripcionProducto: "",
+  descripcionProducto: "Cheesecake elaborado con queso crema, crema de leche, yogur griego, huevo, maicena, vainilla y limón. Su base está hecha con harina de avena, harina de almendra, mantequilla, vainilla y sal.\n\nEl relleno está endulzado con una mezcla de monk fruit y alulosa; la base, con una mezcla de monk fruit y eritritol.",
   // Nombre de esta degustación; se guarda con cada respuesta para separar tandas.
   degustacion: "cheesecake-1",
   // Rangos de precio para una rebanada individual. v = valor que se guarda, t = texto visible.
