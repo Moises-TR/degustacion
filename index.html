@@ -78,14 +78,17 @@ h1:focus{outline:none}
 .nav>div{max-width:560px;margin:0 auto;display:grid;grid-template-columns:1fr 2fr;gap:12px}
 /* Escala 1-5 */
 .scale{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
-.sc{position:relative;display:block}
+.sc{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;color:var(--fg)}
 .sc input,.opt input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
-.sc span{display:flex;align-items:center;justify-content:center;min-height:58px;border-radius:50%;aspect-ratio:1;max-width:100%;background:var(--surface);border:2px solid var(--line);font-size:1.3rem;font-weight:600;font-variant-numeric:tabular-nums}
-.sc input:checked+span{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.sc input:focus-visible+span,.opt input:focus-visible+.mk{outline:3px solid var(--accent);outline-offset:3px}
-.ends{display:flex;justify-content:space-between;gap:12px;font-size:.85rem;color:var(--muted);margin-top:-8px}
-.ends span{max-width:45%}.ends span:last-child{text-align:right}
-.meaning{min-height:1.6em;font-size:1.15rem;font-weight:600;color:var(--accent);text-align:center;margin-top:4px}
+.sc .fc{display:grid;place-items:center;width:100%;max-width:60px;aspect-ratio:1;border-radius:50%;border:2px solid transparent;transition:transform .15s ease,background-color .15s ease,color .15s ease}
+.sc .fc svg{width:84%;height:84%;display:block}
+.sc .lb{font-size:.72rem;line-height:1.2;text-align:center;min-height:2.4em;color:var(--muted);overflow-wrap:anywhere}
+.scale:has(input:checked) .sc input:not(:checked)~*{opacity:.6}
+.sc input:checked~.fc{color:var(--accent);background:var(--accent-soft);border-color:var(--accent);transform:scale(1.08)}
+.sc input:checked~.lb{color:var(--accent);font-weight:600}
+.sc input:focus-visible~.fc,.opt input:focus-visible+.mk{outline:3px solid var(--accent);outline-offset:3px}
+.ico{flex:none;width:28px;height:28px;color:var(--muted)}
+.opt:has(input:checked) .ico{color:var(--accent)}
 /* Opciones */
 .opts{display:flex;flex-direction:column;gap:12px}
 .opt{position:relative;display:flex;align-items:center;gap:14px;min-height:60px;padding:12px 16px;border-radius:14px;background:var(--surface);border:2px solid var(--line);font-weight:500;font-size:1.05rem;line-height:1.3}
@@ -107,6 +110,7 @@ textarea,input.txt{width:100%;min-height:120px;border-radius:14px;border:2px sol
 @media (prefers-reduced-motion:reduce){
   .stage.fwd,.stage.back{animation:none}
   .bar i{transition:none}
+  .sc .fc{transition:none}
 }
 
 input.txt{min-height:56px;padding:0 14px;border-radius:14px;border:2px solid var(--line);background:var(--surface);font-size:1rem}
@@ -160,6 +164,15 @@ const CONFIG = {
 const REF = CONFIG.letraReferencia, PROD = CONFIG.letraProducto;
 const LETRAS = [REF, PROD].slice().sort().join(" y ");
 const MEANING = {1:"No me gustó nada",2:"Me gustó poco",3:"Ni me gustó ni me disgustó",4:"Me gustó",5:"Me gustó mucho"};
+const MOUTH = {1:"M15 35Q24 24 33 35",2:"M17 34Q24 29 31 34",3:"M17 32H31",4:"M17 30Q24 35 31 30",5:"M13 28Q24 41 35 28"};
+const LABEL = {1:"No me gustó nada",2:"Me gustó poco",3:"Normal",4:"Me gustó",5:"Me gustó mucho"};
+const face = i => `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="24" cy="24" r="20"/><circle cx="17" cy="19" r="1.4" fill="currentColor" stroke="none"/><circle cx="31" cy="19" r="1.4" fill="currentColor" stroke="none"/><path d="${MOUTH[i]}"/></svg>`;
+const cube = (x,y) => `<path d="M${x} ${y+3}l4-2 4 2v5l-4 2-4-2z M${x} ${y+3}l4 2 4-2 M${x+4} ${y+5}v5"/>`;
+const ICONO = {
+  menos:`<svg class="ico" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${cube(10,5)}<path d="M14 20v4M11.500 22l2.500 2.500 2.500-2.500"/></svg>`,
+  justo:`<svg class="ico" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="14" cy="14" r="10"/><path d="M9.500 14.500l3 3 6-7"/></svg>`,
+  mas:`<svg class="ico" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${cube(3,13)}${cube(15,13)}${cube(9,3)}</svg>`
+};
 const DULZOR = [["menos","Menos dulce de lo que me gusta"],["justo","Justo como me gusta"],["mas","Más dulce de lo que me gusta"]];
 const COMPRA = [["si","Sí"],["tal_vez","Tal vez, dependiendo del precio y del tamaño de la porción"],["no","No"]];
 const PRECIOS = CONFIG.precios.map(p => [p.v, p.t]);
@@ -219,15 +232,14 @@ const WATER = `<svg class="art" viewBox="0 0 120 120" role="img" aria-label="Vas
 /* ---------- Piezas ---------- */
 function scale(key, q, sec){
   const v = state.a[key];
-  const items = [1,2,3,4,5].map(i => `<label class="sc"><input type="radio" name="${key}" id="${key}-${i}" value="${i}"${v===i?" checked":""} aria-label="${i}, ${MEANING[i]}"><span aria-hidden="true">${i}</span></label>`).join("");
+  const items = [1,2,3,4,5].map(i => `<label class="sc"><input type="radio" name="${key}" id="${key}-${i}" value="${i}"${v===i?" checked":""} aria-label="${i}, ${MEANING[i]}"><span class="fc">${face(i)}</span><span class="lb" aria-hidden="true">${LABEL[i]}</span></label>`).join("");
   return `<p class="eyebrow">${sec}</p><h1 class="q" id="qh" tabindex="-1">${q}</h1>
   <div class="scale" role="radiogroup" aria-labelledby="qh">${items}</div>
-  <div class="ends"><span>No me gustó nada</span><span>Me gustó mucho</span></div>
-  <p class="meaning" id="meaning" aria-live="polite">${v?MEANING[v]:""}</p>`;
+  `;
 }
 function choice(key, q, sec, list, extraTop = ""){
   const v = state.a[key];
-  const items = list.map(([val,txt]) => `<label class="opt"><input type="radio" name="${key}" id="${key}-${val}" value="${val}"${v===val?" checked":""}><span class="mk" aria-hidden="true"></span><span class="t">${esc(txt)}</span></label>`).join("");
+  const items = list.map(([val,txt]) => `<label class="opt"><input type="radio" name="${key}" id="${key}-${val}" value="${val}"${v===val?" checked":""}><span class="mk" aria-hidden="true"></span>${ICONO[val]||""}<span class="t">${esc(txt)}</span></label>`).join("");
   return `${extraTop}<p class="eyebrow">${sec}</p><h1 class="q" id="qh" tabindex="-1"${extraTop?' style="margin-top:8px"':""}>${q}</h1><div class="opts" role="radiogroup" aria-labelledby="qh">${items}</div>`;
 }
 
@@ -318,7 +330,7 @@ function bind(step){
     chrome();
     const at = state.step;
     clearTimeout(autoTimer);
-    const espera = typeof v === "number" ? 1300 : 600; // escala: tiempo para leer el significado
+    const espera = typeof v === "number" ? 700 : 600; // caritas: tiempo para ver la selección
     autoTimer = setTimeout(() => { if(state.step === at) next(); }, espera);
   }));
   st.querySelectorAll("[data-open]").forEach(t => t.addEventListener("input", () => { state.a[t.dataset.open] = t.value; }));
