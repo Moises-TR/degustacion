@@ -117,6 +117,22 @@ input.txt{min-height:56px;padding:0 14px;border-radius:14px;border:2px solid var
 .help{font-size:.9rem;color:var(--muted)}
 .thanks-actions{display:flex;flex-direction:column;gap:12px}
 .desc{white-space:pre-line}
+.celebra{position:relative;overflow:hidden;padding-top:72px;margin-top:-16px}
+.celebra .art{position:relative}
+.p-crust,.p-cream,.p-berry{transform-box:fill-box;transform-origin:50% 100%;animation-fill-mode:both;animation-timing-function:cubic-bezier(.22,.9,.3,1)}
+.p-crust{animation:rise .4s .05s}
+.p-cream{animation:rise .4s .3s}
+.p-berry{animation:drop .5s .6s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes drop{from{opacity:0;transform:translateY(-22px)}to{opacity:1;transform:none}}
+.sprinkles{position:absolute;inset:0;pointer-events:none;z-index:2}
+.sp{position:absolute;top:0;left:var(--x);width:var(--w);height:var(--h);border-radius:var(--r);background:var(--c);opacity:0;animation:fall 1.6s var(--d) ease-in both}
+.sp.c0{--c:var(--accent)}.sp.c1{--c:var(--crust)}.sp.c2{--c:var(--muted)}
+@keyframes fall{0%{opacity:0;transform:translateY(0) rotate(0)}15%{opacity:1}100%{opacity:0;transform:translateY(150px) rotate(var(--rot))}}
+@media (prefers-reduced-motion:reduce){
+  .p-crust,.p-cream,.p-berry{animation:none}
+  .sprinkles{display:none}
+}
 </style>
 </head>
 <body>
@@ -225,6 +241,18 @@ const SLICE = `<svg class="art" viewBox="0 0 160 120" role="img" aria-label="Por
 <circle class="s-hl" cx="93" cy="30" r="2"/>
 <path class="s-leaf" stroke-width="2" stroke-linecap="round" d="M96 25c0-5 3-8 7-9M96 25c-3-3-6-4-9-3"/>
 </svg>`;
+const SLICE_ANIM = SLICE
+  .replace('<path class="s-crust"','<g class="p-crust"><path class="s-crust"').replace('<path class="s-front"','</g><g class="p-cream"><path class="s-front"')
+  .replace('<circle class="s-berry"','</g><g class="p-berry"><circle class="s-berry"').replace('</svg>','</g></svg>');
+function celebracion(){
+  const r = (a,b) => (a + Math.random()*(b-a));
+  let s = "";
+  for(let i = 0; i < 14; i++){
+    const dot = i % 3 === 0, w = dot ? r(5,7) : r(4,5), hh = dot ? w : r(9,13);
+    s += `<i class="sp c${i%3}" style="--x:${r(8,90).toFixed(1)}%;--w:${w.toFixed(1)}px;--h:${hh.toFixed(1)}px;--r:${dot?"50%":"2px"};--d:${(0.9+r(0,0.6)).toFixed(2)}s;--rot:${Math.round(r(-260,260))}deg"></i>`;
+  }
+  return `<div class="celebra">${SLICE_ANIM}<div class="sprinkles" aria-hidden="true">${s}</div></div>`;
+}
 const WATER = `<svg class="art" viewBox="0 0 120 120" role="img" aria-label="Vaso de agua">
 <path class="s-glass" stroke-width="3" stroke-linejoin="round" d="M30 22h60l-6 80a6 6 0 0 1-6 5H42a6 6 0 0 1-6-5z"/>
 <path class="s-water" d="M33 52c9-5 17 5 27 0s17 5 27 0l-3 50a4 4 0 0 1-4 4H42a4 4 0 0 1-4-4z"/>
@@ -282,7 +310,7 @@ function view(step){
       <div class="field"><span class="tag">Opcional</span><h1 class="q" id="qh" tabindex="-1"><label for="motivo">${q}</label></h1><textarea id="motivo" data-open="motivo" maxlength="1000">${esc(state.a.motivo)}</textarea></div>
       <div class="field"><span class="tag">Opcional</span><label for="nombre">Tu nombre</label><input class="txt" type="text" id="nombre" data-open="nombre" maxlength="60" autocomplete="off" value="${esc(state.a.nombre)}"><p class="help">Podés dejarlo en blanco. Preferimos tu opinión sincera.</p></div>`;
     }
-    case "thanks": return `${SLICE}
+    case "thanks": return `${celebracion()}
       <h1 class="title" id="qh" tabindex="-1">¡Gracias!</h1>
       <p class="lead center">¡Gracias por probar y compartir tu opinión! Tus respuestas nos ayudan a mejorar. <strong>Cuando todas las personas que estén degustando con vos hayan enviado su encuesta,</strong> pueden compartir sus comentarios.</p>
       <div class="thanks-actions" id="thanksBox"></div>`;
