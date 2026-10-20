@@ -355,11 +355,7 @@ function bind(step){
     if(k === "compra" && state.a.compra !== v) delete state.a.motivo;
     state.a[k] = v;
     const m = $("meaning"); if(m) m.textContent = MEANING[v] || "";
-    chrome();
-    const at = state.step;
-    clearTimeout(autoTimer);
-    const espera = typeof v === "number" ? 700 : 600; // caritas: tiempo para ver la selección
-    autoTimer = setTimeout(() => { if(state.step === at) next(); }, espera);
+    chrome(); // habilita "Siguiente"; la persona avanza cuando quiera
   }));
   st.querySelectorAll("[data-open]").forEach(t => t.addEventListener("input", () => { state.a[t.dataset.open] = t.value; }));
 }
