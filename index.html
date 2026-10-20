@@ -117,22 +117,25 @@ input.txt{min-height:56px;padding:0 14px;border-radius:14px;border:2px solid var
 .help{font-size:.9rem;color:var(--muted)}
 .thanks-actions{display:flex;flex-direction:column;gap:12px}
 .desc{white-space:pre-line}
-.celebra{position:relative;overflow:hidden;padding-top:72px;margin-top:-16px}
-.celebra .art{position:relative}
-.p-crust,.p-cream,.p-berry{transform-box:fill-box;transform-origin:50% 100%;animation-fill-mode:both;animation-timing-function:cubic-bezier(.22,.9,.3,1)}
-.p-crust{animation:rise .4s .05s}
-.p-cream{animation:rise .4s .3s}
-.p-berry{animation:drop .5s .6s cubic-bezier(.3,1.5,.5,1) both}
-@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-@keyframes drop{from{opacity:0;transform:translateY(-22px)}to{opacity:1;transform:none}}
-.sprinkles{position:absolute;inset:0;pointer-events:none;z-index:2}
-.sp{position:absolute;top:0;left:var(--x);width:var(--w);height:var(--h);border-radius:var(--r);background:var(--c);opacity:0;animation:fall 1.6s var(--d) ease-in both}
-.sp.c0{--c:var(--accent)}.sp.c1{--c:var(--crust)}.sp.c2{--c:var(--muted)}
-@keyframes fall{0%{opacity:0;transform:translateY(0) rotate(0)}15%{opacity:1}100%{opacity:0;transform:translateY(150px) rotate(var(--rot))}}
+.celebra{position:relative;display:grid;place-items:center;padding-block:8px}
+.desc-h{display:block;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.p-crust,.p-cream,.p-berry{transform-box:fill-box;transform-origin:50% 100%;animation-fill-mode:both}
+.celebra .art{animation:pop .7s cubic-bezier(.3,1.5,.5,1) both}
+.p-crust{animation:rise .5s .15s cubic-bezier(.22,.9,.3,1) both}
+.p-cream{animation:rise .5s .45s cubic-bezier(.22,.9,.3,1) both}
+.p-berry{animation:drop .6s .85s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes pop{from{transform:scale(.6)}to{transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@keyframes drop{from{opacity:0;transform:translateY(-60px)}to{opacity:1;transform:none}}
+.confeti{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden}
+.sp{position:absolute;top:-24px;left:var(--x);width:var(--w);height:var(--h);border-radius:var(--r);background:var(--c);animation:fall var(--t) var(--d) cubic-bezier(.25,.4,.5,1) both}
+.sp.c0{--c:var(--accent)}.sp.c1{--c:var(--crust)}.sp.c2{--c:var(--accent-soft)}
+@keyframes fall{0%{opacity:1;transform:translate(0,0) rotate(0)}80%{opacity:1}100%{opacity:0;transform:translate(var(--dx),105vh) rotate(var(--rot))}}
 @media (prefers-reduced-motion:reduce){
-  .p-crust,.p-cream,.p-berry{animation:none}
-  .sprinkles{display:none}
+  .celebra .art,.p-crust,.p-cream,.p-berry{animation:fadein .6s both}
+  .confeti{display:none}
 }
+@keyframes fadein{from{opacity:0}to{opacity:1}}
 </style>
 </head>
 <body>
@@ -161,14 +164,6 @@ const CONFIG = {
   descripcionProducto: "Cheesecake elaborado con queso crema, crema de leche, yogur griego, huevo, maicena, vainilla y limón. Su base está hecha con harina de avena, harina de almendra, mantequilla, vainilla y sal.\n\nEl relleno está endulzado con una mezcla de monk fruit y alulosa; la base, con una mezcla de monk fruit y eritritol.",
   // Nombre de esta degustación; se guarda con cada respuesta para separar tandas.
   degustacion: "cheesecake-1",
-  // Rangos de precio para una rebanada individual. v = valor que se guarda, t = texto visible.
-  precios: [
-    {v:"menos_80", t:"Menos de C$80"},
-    {v:"80_120", t:"C$80 – C$120"},
-    {v:"120_160", t:"C$120 – C$160"},
-    {v:"mas_160", t:"Más de C$160"},
-    {v:"no_pagaria", t:"No lo pagaría"}
-  ],
   // Conexión a Supabase (la clave anon es pública; solo permite insertar).
   supabase: {
     url: "https://nfdqkkvhudcmcgqupgsj.supabase.co",
@@ -192,7 +187,6 @@ const ICONO = {
 };
 const DULZOR = [["menos","Menos dulce de lo que me gusta"],["justo","Justo como me gusta"],["mas","Más dulce de lo que me gusta"]];
 const COMPRA = [["si","Sí"],["tal_vez","Tal vez, dependiendo del precio y del tamaño de la porción"],["no","No"]];
-const PRECIOS = CONFIG.precios.map(p => [p.v, p.t]);
 const SEGUIMIENTO = {
   si:"¿Qué es lo que más te motivaría a comprarlo?",
   tal_vez:"¿Qué necesitarías saber o qué tendría que mejorar para decidirte?",
@@ -222,11 +216,11 @@ const STEPS = [{id:"welcome"}].concat(
   ORDEN === "referencia_primero"
     ? [...bloqueRef, ...bloqueProd.map((s,i) => i===0 ? agua("prod") : s)]
     : [...bloqueProd, ...bloqueRef.map((s,i) => i===0 ? agua("ref") : s)],
-  [{id:"compra"},{id:"precio"},{id:"motivo"}]
+  [{id:"compra"},{id:"motivo"}]
 );
 const LAST = STEPS.length - 1;     // último paso de la encuesta (envía)
 const THANKS = STEPS.length;       // pantalla de gracias
-const REQUERIDO = {saborRef:"saborRef",dulzorRef:"dulzorRef",saborProd:"saborProd",texturaProd:"texturaProd",dulzorProd:"dulzorProd",compra:"compra",precio:"precio"};
+const REQUERIDO = {saborRef:"saborRef",dulzorRef:"dulzorRef",saborProd:"saborProd",texturaProd:"texturaProd",dulzorProd:"dulzorProd",compra:"compra"};
 
 const state = {step:0, dir:1, a:{}, sending:false, pendientes:0, retrying:false, retryDone:false};
 let autoTimer = 0;
@@ -244,14 +238,20 @@ const SLICE = `<svg class="art" viewBox="0 0 160 120" role="img" aria-label="Por
 const SLICE_ANIM = SLICE
   .replace('<path class="s-crust"','<g class="p-crust"><path class="s-crust"').replace('<path class="s-front"','</g><g class="p-cream"><path class="s-front"')
   .replace('<circle class="s-berry"','</g><g class="p-berry"><circle class="s-berry"').replace('</svg>','</g></svg>');
-function celebracion(){
-  const r = (a,b) => (a + Math.random()*(b-a));
+function celebracion(){ return `<div class="celebra">${SLICE_ANIM}</div>`; }
+function lanzarConfeti(){
+  if(reduced) return;
+  const r = (a,b) => a + Math.random()*(b-a);
+  const box = document.createElement("div");
+  box.className = "confeti"; box.setAttribute("aria-hidden","true");
   let s = "";
-  for(let i = 0; i < 14; i++){
-    const dot = i % 3 === 0, w = dot ? r(5,7) : r(4,5), hh = dot ? w : r(9,13);
-    s += `<i class="sp c${i%3}" style="--x:${r(8,90).toFixed(1)}%;--w:${w.toFixed(1)}px;--h:${hh.toFixed(1)}px;--r:${dot?"50%":"2px"};--d:${(0.9+r(0,0.6)).toFixed(2)}s;--rot:${Math.round(r(-260,260))}deg"></i>`;
+  for(let i = 0; i < 36; i++){
+    const dot = i % 3 === 0, w = dot ? r(8,11) : r(6,8), h = dot ? w : r(14,20);
+    s += `<i class="sp c${i%3}" style="--x:${r(2,96).toFixed(1)}%;--w:${w.toFixed(1)}px;--h:${h.toFixed(1)}px;--r:${dot?"50%":"3px"};--d:${r(0.9,1.9).toFixed(2)}s;--t:${r(2.2,3.2).toFixed(2)}s;--dx:${Math.round(r(-40,40))}px;--rot:${Math.round(r(-540,540))}deg"></i>`;
   }
-  return `<div class="celebra">${SLICE_ANIM}<div class="sprinkles" aria-hidden="true">${s}</div></div>`;
+  box.innerHTML = s;
+  document.body.appendChild(box);
+  setTimeout(() => box.remove(), 5500);
 }
 const WATER = `<svg class="art" viewBox="0 0 120 120" role="img" aria-label="Vaso de agua">
 <path class="s-glass" stroke-width="3" stroke-linejoin="round" d="M30 22h60l-6 80a6 6 0 0 1-6 5H42a6 6 0 0 1-6-5z"/>
@@ -299,11 +299,10 @@ function view(step){
       <div class="field"><span class="tag">Opcional</span><label for="mejoras">¿Hay algo que cambiarías o mejorarías de la muestra ${PROD}?</label><textarea id="mejoras" data-open="mejoras" maxlength="1000">${esc(state.a.mejoras)}</textarea></div>`;
     case "compra": {
       const d = (CONFIG.descripcionProducto || "").trim();
-      const box = d ? `<div class="desc">${esc(d)}</div>` : `<div class="desc pending">Descripción pendiente: agregá aquí los ingredientes reales de la receta (CONFIG.descripcionProducto).</div>`;
+      const box = d ? `<div class="desc"><span class="desc-h">Ingredientes</span>${esc(d)}</div>` : `<div class="desc pending">Descripción pendiente: agregá aquí los ingredientes reales de la receta (CONFIG.descripcionProducto).</div>`;
       return choice("compra", "¿Te interesaría comprar esta versión de cheesecake?", "Interés de compra", COMPRA,
         `<h2 class="display">La muestra ${PROD} es la versión que queremos vender</h2><p class="lead muted">Es nuestra alternativa saludable.</p>${box}`);
     }
-    case "precio": return choice("precio", "¿Cuánto pagarías por una rebanada individual de esta versión?", "Interés de compra", PRECIOS);
     case "motivo": {
       const q = SEGUIMIENTO[state.a.compra] || SEGUIMIENTO.tal_vez;
       return `<p class="eyebrow">Interés de compra</p>
@@ -326,7 +325,7 @@ function render(){
   st.classList.remove("fwd","back"); void st.offsetWidth; st.classList.add(state.dir > 0 ? "fwd" : "back");
   st.innerHTML = view(step);
   bind(step);
-  if(step.id === "thanks") renderThanks();
+  if(step.id === "thanks"){ renderThanks(); lanzarConfeti(); }
   chrome();
   window.scrollTo(0,0);
   const h = $("qh"); if(h) h.focus({preventScroll:true});
@@ -352,7 +351,7 @@ function bind(step){
   const st = $("stage");
   if(step.id === "welcome") $("btnStart").onclick = () => go(1, 1);
   st.querySelectorAll('input[type="radio"]').forEach(inp => inp.addEventListener("change", () => {
-    const k = inp.name, v = /^(compra|precio|dulzor)/.test(k) ? inp.value : Number(inp.value);
+    const k = inp.name, v = /^(compra|dulzor)/.test(k) ? inp.value : Number(inp.value);
     if(k === "compra" && state.a.compra !== v) delete state.a.motivo;
     state.a[k] = v;
     const m = $("meaning"); if(m) m.textContent = MEANING[v] || "";
@@ -403,7 +402,7 @@ async function submit(){
     sabor_producto: state.a.saborProd, textura_producto: state.a.texturaProd, dulzor_producto: state.a.dulzorProd,
     regusto: t("regusto"), mejoras: t("mejoras"),
     compra: state.a.compra, motivo_compra: t("motivo"),
-    precio: String(state.a.precio || ""),
+    precio: "",
     nombre: t("nombre", 60)
   };
   const ok = await postWithRetry(doc);
