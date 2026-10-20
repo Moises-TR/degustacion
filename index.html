@@ -85,7 +85,7 @@ h1:focus{outline:none}
 .sc input:focus-visible+span,.opt input:focus-visible+.mk{outline:3px solid var(--accent);outline-offset:3px}
 .ends{display:flex;justify-content:space-between;gap:12px;font-size:.85rem;color:var(--muted);margin-top:-8px}
 .ends span{max-width:45%}.ends span:last-child{text-align:right}
-.meaning{min-height:1.5em;font-weight:600;color:var(--accent);text-align:center;margin-top:-6px}
+.meaning{min-height:1.6em;font-size:1.15rem;font-weight:600;color:var(--accent);text-align:center;margin-top:4px}
 /* Opciones */
 .opts{display:flex;flex-direction:column;gap:12px}
 .opt{position:relative;display:flex;align-items:center;gap:14px;min-height:60px;padding:12px 16px;border-radius:14px;background:var(--surface);border:2px solid var(--line);font-weight:500;font-size:1.05rem;line-height:1.3}
@@ -318,7 +318,8 @@ function bind(step){
     chrome();
     const at = state.step;
     clearTimeout(autoTimer);
-    if(reduced) next(); else autoTimer = setTimeout(() => { if(state.step === at) next(); }, 400);
+    const espera = typeof v === "number" ? 1300 : 600; // escala: tiempo para leer el significado
+    autoTimer = setTimeout(() => { if(state.step === at) next(); }, espera);
   }));
   st.querySelectorAll("[data-open]").forEach(t => t.addEventListener("input", () => { state.a[t.dataset.open] = t.value; }));
 }
